@@ -107,6 +107,14 @@
             justify-content: space-between;
             border: 1px solid #ddd;
         }
+        #contact-list li {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        #contact-list .email, #contact-list .phone {
+            flex: 1;
+        }
     </style>
 </head>
 <body>
@@ -135,7 +143,10 @@
             <input type="text" id="contact-phone" placeholder="Adicionar telefone para WhatsApp">
             <button type="submit">Adicionar Telefone</button>
         </form>
-        <ul id="contact-list"></ul>
+        <h3>Emails:</h3>
+        <ul id="email-list"></ul>
+        <h3>Telefones:</h3>
+        <ul id="phone-list"></ul>
 
         <h2>Disparar Relatório</h2>
         <button id="send-email-now">Enviar Relatório por E-mail</button>
@@ -146,19 +157,25 @@
         const activeProjectsDiv = document.getElementById('active-projects');
         const expiredProjectsDiv = document.getElementById('expired-projects');
         const addProjectForm = document.getElementById('add-project-form');
-        const contactList = document.getElementById('contact-list');
+        const emailList = document.getElementById('email-list');
+        const phoneList = document.getElementById('phone-list');
         const sendEmailNowButton = document.getElementById('send-email-now');
         const sendWhatsAppNowButton = document.getElementById('send-whatsapp-now');
 
         const projects = JSON.parse(localStorage.getItem('projects')) || [];
-        const contacts = JSON.parse(localStorage.getItem('contacts')) || [];
+        const emails = JSON.parse(localStorage.getItem('emails')) || [];
+        const phones = JSON.parse(localStorage.getItem('phones')) || [];
 
         function saveProjects() {
             localStorage.setItem('projects', JSON.stringify(projects));
         }
 
-        function saveContacts() {
-            localStorage.setItem('contacts', JSON.stringify(contacts));
+        function saveEmails() {
+            localStorage.setItem('emails', JSON.stringify(emails));
+        }
+
+        function savePhones() {
+            localStorage.setItem('phones', JSON.stringify(phones));
         }
 
         function renderProjects() {
@@ -194,12 +211,43 @@
         }
 
         function renderContacts() {
-            contactList.innerHTML = '';
-            contacts.forEach((contact, index) => {
+            emailList.innerHTML = '';
+            emails.forEach((email, index) => {
                 const li = document.createElement('li');
-                li.innerHTML = `${contact} <button onclick="deleteContact(${index})">Excluir</button>`;
-                contactList.appendChild(li);
+                li.innerHTML = `${email} <button onclick="deleteEmail(${index})">Excluir</button>`;
+                emailList.appendChild(li);
             });
+
+            phoneList.innerHTML = '';
+            phones.forEach((phone, index) => {
+                const li = document.createElement('li');
+                li.innerHTML = `${phone} <button onclick="deletePhone(${index})">Excluir</button>`;
+                phoneList.appendChild(li);
+            });
+        }
+
+        function addEmail(email) {
+            emails.push(email);
+            saveEmails();
+            renderContacts();
+        }
+
+        function deleteEmail(index) {
+            emails.splice(index, 1);
+            saveEmails();
+            renderContacts();
+        }
+
+        function addPhone(phone) {
+            phones.push(phone);
+            savePhones();
+            renderContacts();
+        }
+
+        function deletePhone(index) {
+            phones.splice(index, 1);
+            savePhones();
+            renderContacts();
         }
 
         function addProject(name) {
@@ -235,104 +283,6 @@
             }
         }
 
-        function addContact(email) {
-            contacts.push(email);
-            saveContacts();
-            renderContacts();
-        }
-
-        function deleteContact(index) {
-            contacts.splice(index, 1);
-            saveContacts();
-            renderContacts();
-        }
-
         function updateCountdown(id) {
-            const project = projects.find(p => p.id === id);
-            if (project && !project.expired) {
-                const countdownElement = document.getElementById(`countdown-${id}`);
-                const interval = setInterval(() => {
-                    const now = Date.now();
-                    const remainingTime = project.deadline - now;
+            const project = projects
 
-                    if (remainingTime <= 0) {
-                        project.expired = true;
-                        saveProjects();
-                        renderProjects();
-                        clearInterval(interval);
-                    } else {
-                        const days = Math.floor(remainingTime / (1000 * 60 * 60 * 24));
-                        const hours = Math.floor((remainingTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                        const minutes = Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60));
-                        const seconds = Math.floor((remainingTime % (1000 * 60)) / 1000);
-
-                        countdownElement.textContent = `${days}d ${hours}h ${minutes}m ${seconds}s`;
-                    }
-                }, 1000);
-            }
-        }
-
-        function generateReport() {
-            return projects.map(p => {
-                const status = p.expired ? 'Expirado' : `${Math.ceil((p.deadline - Date.now()) / (1000 * 60 * 60 * 24))} dias restantes`;
-                return `${p.name}: ${status}`;
-            }).join('\n');
-        }
-
-        function sendEmailReport() {
-            const report = generateReport();
-            const subject = "Relatório de Projetos";
-            const body = encodeURIComponent(report);
-            contacts.forEach(contact => {
-                const mailtoLink = `mailto:${contact}?subject=${subject}&body=${body}`;
-                window.open(mailtoLink, '_blank');
-            });
-        }
-
-        function sendWhatsAppReport() {
-            const report = generateReport();
-            contacts.forEach(contact => {
-                const whatsappLink = `https://wa.me/${contact}?text=${encodeURIComponent(report)}`;
-                window.open(whatsappLink, '_blank');
-            });
-        }
-
-        sendEmailNowButton.addEventListener('click', sendEmailReport);
-        sendWhatsAppNowButton.addEventListener('click', sendWhatsAppReport);
-
-        addProjectForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const projectName = document.getElementById('project-name').value;
-            if (projectName) {
-                addProject(projectName);
-                addProjectForm.reset();
-            }
-        });
-
-        document.getElementById('add-contact-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const email = document.getElementById('contact-email').value;
-            if (email) {
-                addContact(email);
-                document.getElementById('add-contact-form').reset();
-            }
-        });
-
-        setInterval(() => {
-            projects.forEach(project => updateCountdown(project.id));
-        }, 1000);
-
-        // Envio diário às 08:00
-        setInterval(() => {
-            const now = new Date();
-            if (now.getHours() === 8 && now.getMinutes() === 0) {
-                sendEmailReport();
-                sendWhatsAppReport();
-            }
-        }, 60000);
-
-        renderProjects();
-        renderContacts();
-    </script>
-</body>
-</html>
