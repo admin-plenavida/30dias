@@ -6,70 +6,107 @@
     <title>Gestor de Projetos</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Roboto', sans-serif;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
-            background-color: #f9f9f9;
+            background-color: #121212;
+            color: #ffffff;
         }
         header {
-            background-color: #4CAF50;
+            background-color: #1E88E5;
             color: white;
             text-align: center;
             padding: 1em 0;
+            font-size: 1.5rem;
+            font-weight: bold;
         }
         main {
             margin: 20px auto;
-            max-width: 800px;
-            background: white;
+            max-width: 900px;
+            background: #1E1E1E;
             padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
         }
         h2 {
-            color: #333;
+            color: #BB86FC;
+            font-size: 1.25rem;
+            margin-bottom: 15px;
         }
         form {
             margin-bottom: 20px;
         }
         input, button {
-            padding: 10px;
+            padding: 12px;
             margin: 5px 0;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            width: calc(100% - 22px);
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        input {
+            width: calc(100% - 20px);
+            background-color: #2C2C2C;
+            color: white;
+            outline: none;
         }
         button {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
+            background-color: #03DAC6;
+            color: #000;
             cursor: pointer;
-            font-size: 14px;
+            transition: background-color 0.3s;
         }
         button:hover {
-            background-color: #45a049;
+            background-color: #00BFA5;
         }
         .project {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px;
-            border-bottom: 1px solid #ddd;
-        }
-        .project button {
-            padding: 5px 10px;
-            font-size: 12px;
-        }
-        .project:last-child {
-            border-bottom: none;
+            padding: 15px;
+            border: 1px solid #333;
+            border-radius: 8px;
+            background-color: #212121;
+            margin-bottom: 15px;
         }
         .project.expired {
-            background-color: #ffe6e6;
+            border-color: #CF6679;
+        }
+        .project .project-actions {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+        .project-actions button {
+            flex: 1;
+            padding: 10px;
+            font-size: 0.9rem;
+            background-color: #03DAC6;
+            border-radius: 6px;
+            border: none;
+            color: #000;
+            transition: background-color 0.3s;
+        }
+        .project-actions button:hover {
+            background-color: #00BFA5;
+        }
+        .countdown {
+            font-size: 1.1rem;
+            color: #BB86FC;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+        ul li {
+            background: #2C2C2C;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
         }
     </style>
 </head>
 <body>
     <header>
-        <h1>Gestor de Projetos</h1>
+        Gestor de Projetos
     </header>
     <main>
         <h2>Adicionar Novo Projeto</h2>
@@ -81,13 +118,17 @@
         <h2>Projetos Ativos</h2>
         <div id="active-projects"></div>
 
-        <h2>Projetos Desativados</h2>
+        <h2>Projetos Expirados</h2>
         <div id="expired-projects"></div>
 
         <h2>Gerenciar Contatos</h2>
         <form id="add-contact-form">
             <input type="email" id="contact-email" placeholder="Adicionar e-mail para notificações">
             <button type="submit">Adicionar Contato</button>
+        </form>
+        <form id="add-phone-form">
+            <input type="text" id="contact-phone" placeholder="Adicionar telefone para WhatsApp">
+            <button type="submit">Adicionar Telefone</button>
         </form>
         <ul id="contact-list"></ul>
 
@@ -128,9 +169,12 @@
                 const projectDiv = document.createElement('div');
                 projectDiv.className = 'project';
                 projectDiv.innerHTML = `
-                    <span>${project.name} - <span id="countdown-${project.id}"></span></span>
-                    <button onclick="extendProject('${project.id}')">Prorrogar</button>
-                    <button onclick="deleteProject('${project.id}')">Excluir</button>
+                    <div>${project.name}</div>
+                    <div class="countdown" id="countdown-${project.id}"></div>
+                    <div class="project-actions">
+                        <button onclick="extendProject('${project.id}')">Prorrogar (${project.extensions || 0})</button>
+                        <button onclick="deleteProject('${project.id}')">Excluir</button>
+                    </div>
                 `;
                 activeProjectsDiv.appendChild(projectDiv);
                 updateCountdown(project.id);
@@ -139,7 +183,7 @@
             expiredProjects.forEach(project => {
                 const projectDiv = document.createElement('div');
                 projectDiv.className = 'project expired';
-                projectDiv.innerHTML = `<span>${project.name} - Expirado</span>`;
+                projectDiv.innerHTML = `<div>${project.name}</div><div class="countdown">Expirado</div>`;
                 expiredProjectsDiv.appendChild(projectDiv);
             });
         }
@@ -242,8 +286,10 @@
 
         function sendWhatsAppReport() {
             const report = generateReport();
-            const whatsappLink = `https://wa.me/5511953608532?text=${encodeURIComponent(report)}`;
-            window.open(whatsappLink, '_blank');
+            contacts.forEach(contact => {
+                const whatsappLink = `https://wa.me/${contact}?text=${encodeURIComponent(report)}`;
+                window.open(whatsappLink, '_blank');
+            });
         }
 
         sendEmailNowButton.addEventListener('click', sendEmailReport);
