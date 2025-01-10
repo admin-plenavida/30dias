@@ -1,69 +1,228 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Contagem Regressiva</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-      background-color: #f4f4f9;
-      color: #333;
-      text-align: center;
-    }
-    .container {
-      padding: 20px;
-      background: #fff;
-      border-radius: 10px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-    h1 {
-      margin-bottom: 20px;
-    }
-    #countdown {
-      font-size: 2rem;
-      font-weight: bold;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor de Projetos</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            background-color: #f9f9f9;
+        }
+        header {
+            background-color: #4CAF50;
+            color: white;
+            text-align: center;
+            padding: 1em 0;
+        }
+        main {
+            margin: 20px auto;
+            max-width: 800px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            color: #333;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        input, button {
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: calc(100% - 22px);
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .project {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        .project:last-child {
+            border-bottom: none;
+        }
+        .project.expired {
+            background-color: #ffe6e6;
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Projeto em Contagem Regressiva</h1>
-    <div id="countdown">30 Dias Restantes</div>
-  </div>
+    <header>
+        <h1>Gestor de Projetos</h1>
+    </header>
+    <main>
+        <h2>Adicionar Novo Projeto</h2>
+        <form id="add-project-form">
+            <input type="text" id="project-name" placeholder="Nome do projeto" required>
+            <button type="submit">Adicionar Projeto</button>
+        </form>
 
-  <script>
-    // Define o prazo de 30 dias a partir do momento atual
-    const deadline = new Date();
-    deadline.setDate(deadline.getDate() + 30);
+        <h2>Projetos Ativos</h2>
+        <div id="active-projects"></div>
 
-    function updateCountdown() {
-      const now = new Date();
-      const timeRemaining = deadline - now;
+        <h2>Projetos Desativados</h2>
+        <div id="expired-projects"></div>
 
-      if (timeRemaining <= 0) {
-        document.getElementById("countdown").textContent = "O prazo terminou!";
-        clearInterval(interval);
-        return;
-      }
+        <h2>Gerenciar Contatos</h2>
+        <form id="add-contact-form">
+            <input type="email" id="contact-email" placeholder="Adicionar e-mail para notificações">
+            <button type="submit">Adicionar Contato</button>
+        </form>
+        <ul id="contact-list"></ul>
+    </main>
 
-      const days = Math.floor(timeRemaining / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((timeRemaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((timeRemaining % (1000 * 60)) / 1000);
+    <script>
+        const activeProjectsDiv = document.getElementById('active-projects');
+        const expiredProjectsDiv = document.getElementById('expired-projects');
+        const addProjectForm = document.getElementById('add-project-form');
+        const contactList = document.getElementById('contact-list');
 
-      document.getElementById("countdown").textContent =
-        `${days} Dias, ${hours} Horas, ${minutes} Minutos, ${seconds} Segundos`;
-    }
+        const projects = JSON.parse(localStorage.getItem('projects')) || [];
+        const contacts = JSON.parse(localStorage.getItem('contacts')) || [];
 
-    // Atualiza a contagem a cada segundo
-    const interval = setInterval(updateCountdown, 1000);
-    updateCountdown(); // Atualiza imediatamente ao carregar
-  </script>
+        function saveProjects() {
+            localStorage.setItem('projects', JSON.stringify(projects));
+        }
+
+        function saveContacts() {
+            localStorage.setItem('contacts', JSON.stringify(contacts));
+        }
+
+        function renderProjects() {
+            activeProjectsDiv.innerHTML = '';
+            expiredProjectsDiv.innerHTML = '';
+
+            const activeProjects = projects.filter(p => !p.expired);
+            const expiredProjects = projects.filter(p => p.expired);
+
+            activeProjects.sort((a, b) => b.remainingDays - a.remainingDays);
+
+            activeProjects.forEach(project => {
+                const projectDiv = document.createElement('div');
+                projectDiv.className = 'project';
+                projectDiv.innerHTML = `
+                    <span>${project.name} - ${project.remainingDays} dias restantes</span>
+                    <button onclick="extendProject('${project.id}')">Prorrogar</button>
+                    <button onclick="deleteProject('${project.id}')">Excluir</button>
+                `;
+                activeProjectsDiv.appendChild(projectDiv);
+            });
+
+            expiredProjects.forEach(project => {
+                const projectDiv = document.createElement('div');
+                projectDiv.className = 'project expired';
+                projectDiv.innerHTML = `<span>${project.name} - Expirado</span>`;
+                expiredProjectsDiv.appendChild(projectDiv);
+            });
+        }
+
+        function renderContacts() {
+            contactList.innerHTML = '';
+            contacts.forEach((contact, index) => {
+                const li = document.createElement('li');
+                li.innerHTML = `${contact} <button onclick="deleteContact(${index})">Excluir</button>`;
+                contactList.appendChild(li);
+            });
+        }
+
+        function addProject(name) {
+            const project = {
+                id: Date.now().toString(),
+                name,
+                remainingDays: 30,
+                expired: false,
+                extensions: 0
+            };
+            projects.push(project);
+            saveProjects();
+            renderProjects();
+        }
+
+        function extendProject(id) {
+            const project = projects.find(p => p.id === id);
+            if (project) {
+                project.remainingDays += 30;
+                project.extensions++;
+                saveProjects();
+                renderProjects();
+            }
+        }
+
+        function deleteProject(id) {
+            const index = projects.findIndex(p => p.id === id);
+            if (index > -1) {
+                projects.splice(index, 1);
+                saveProjects();
+                renderProjects();
+            }
+        }
+
+        function addContact(email) {
+            contacts.push(email);
+            saveContacts();
+            renderContacts();
+        }
+
+        function deleteContact(index) {
+            contacts.splice(index, 1);
+            saveContacts();
+            renderContacts();
+        }
+
+        addProjectForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const projectName = document.getElementById('project-name').value;
+            if (projectName) {
+                addProject(projectName);
+                addProjectForm.reset();
+            }
+        });
+
+        document.getElementById('add-contact-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('contact-email').value;
+            if (email) {
+                addContact(email);
+                document.getElementById('add-contact-form').reset();
+            }
+        });
+
+        function updateDays() {
+            const now = new Date().getHours();
+            if (now === 8) {
+                projects.forEach(project => {
+                    if (!project.expired) {
+                        project.remainingDays--;
+                        if (project.remainingDays <= 0) {
+                            project.expired = true;
+                        }
+                    }
+                });
+                saveProjects();
+                renderProjects();
+            }
+        }
+
+        setInterval(updateDays, 3600000); // Atualiza a cada hora
+
+        renderProjects();
+        renderContacts();
+    </script>
 </body>
 </html>
