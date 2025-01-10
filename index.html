@@ -9,11 +9,12 @@
             font-family: 'Roboto', sans-serif;
             margin: 0;
             padding: 0;
-            background-color: #121212;
-            color: #ffffff;
+            background: url('https://via.placeholder.com/1200x800?text=Rel%C3%B3gios') no-repeat center center fixed;
+            background-size: cover;
+            color: #000;
         }
         header {
-            background-color: #1E88E5;
+            background-color: #FFB74D;
             color: white;
             text-align: center;
             padding: 1em 0;
@@ -23,13 +24,13 @@
         main {
             margin: 20px auto;
             max-width: 900px;
-            background: #1E1E1E;
+            background: rgba(255, 255, 255, 0.9);
             padding: 20px;
             border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
         }
         h2 {
-            color: #BB86FC;
+            color: #FF6F00;
             font-size: 1.25rem;
             margin-bottom: 15px;
         }
@@ -39,68 +40,72 @@
         input, button {
             padding: 12px;
             margin: 5px 0;
-            border: none;
+            border: 1px solid #ddd;
             border-radius: 8px;
             font-size: 1rem;
         }
         input {
             width: calc(100% - 20px);
-            background-color: #2C2C2C;
-            color: white;
+            background-color: #fff;
+            color: #000;
             outline: none;
         }
         button {
-            background-color: #03DAC6;
-            color: #000;
+            background-color: #FF9800;
+            color: white;
             cursor: pointer;
             transition: background-color 0.3s;
         }
         button:hover {
-            background-color: #00BFA5;
+            background-color: #FB8C00;
         }
         .project {
             padding: 15px;
-            border: 1px solid #333;
+            border: 1px solid #eee;
             border-radius: 8px;
-            background-color: #212121;
+            background-color: #fff;
             margin-bottom: 15px;
         }
         .project.expired {
-            border-color: #CF6679;
+            border-color: #E57373;
+            background-color: #FFEBEE;
         }
         .project .project-actions {
             margin-top: 15px;
             display: flex;
+            justify-content: center;
             gap: 10px;
         }
         .project-actions button {
-            flex: 1;
-            padding: 10px;
-            font-size: 0.9rem;
-            background-color: #03DAC6;
+            padding: 8px;
+            font-size: 0.8rem;
+            background-color: #FF9800;
             border-radius: 6px;
             border: none;
-            color: #000;
+            color: white;
             transition: background-color 0.3s;
         }
         .project-actions button:hover {
-            background-color: #00BFA5;
+            background-color: #FB8C00;
         }
         .countdown {
             font-size: 1.1rem;
-            color: #BB86FC;
+            color: #FF6F00;
+            text-align: center;
+            margin-top: 10px;
         }
         ul {
             list-style: none;
             padding: 0;
         }
         ul li {
-            background: #2C2C2C;
+            background: #fff;
             margin: 10px 0;
             padding: 10px;
             border-radius: 8px;
             display: flex;
             justify-content: space-between;
+            border: 1px solid #ddd;
         }
     </style>
 </head>
