@@ -44,6 +44,7 @@
             color: white;
             border: none;
             cursor: pointer;
+            font-size: 14px;
         }
         button:hover {
             background-color: #45a049;
@@ -53,6 +54,10 @@
             justify-content: space-between;
             padding: 10px;
             border-bottom: 1px solid #ddd;
+        }
+        .project button {
+            padding: 5px 10px;
+            font-size: 12px;
         }
         .project:last-child {
             border-bottom: none;
@@ -85,6 +90,10 @@
             <button type="submit">Adicionar Contato</button>
         </form>
         <ul id="contact-list"></ul>
+
+        <h2>Disparar Relatório</h2>
+        <button id="send-email-now">Enviar Relatório por E-mail</button>
+        <button id="send-whatsapp-now">Enviar Relatório por WhatsApp</button>
     </main>
 
     <script>
@@ -92,6 +101,8 @@
         const expiredProjectsDiv = document.getElementById('expired-projects');
         const addProjectForm = document.getElementById('add-project-form');
         const contactList = document.getElementById('contact-list');
+        const sendEmailNowButton = document.getElementById('send-email-now');
+        const sendWhatsAppNowButton = document.getElementById('send-whatsapp-now');
 
         const projects = JSON.parse(localStorage.getItem('projects')) || [];
         const contacts = JSON.parse(localStorage.getItem('contacts')) || [];
@@ -111,17 +122,18 @@
             const activeProjects = projects.filter(p => !p.expired);
             const expiredProjects = projects.filter(p => p.expired);
 
-            activeProjects.sort((a, b) => b.remainingDays - a.remainingDays);
+            activeProjects.sort((a, b) => b.remainingTime - a.remainingTime);
 
             activeProjects.forEach(project => {
                 const projectDiv = document.createElement('div');
                 projectDiv.className = 'project';
                 projectDiv.innerHTML = `
-                    <span>${project.name} - ${project.remainingDays} dias restantes</span>
+                    <span>${project.name} - <span id="countdown-${project.id}"></span></span>
                     <button onclick="extendProject('${project.id}')">Prorrogar</button>
                     <button onclick="deleteProject('${project.id}')">Excluir</button>
                 `;
                 activeProjectsDiv.appendChild(projectDiv);
+                updateCountdown(project.id);
             });
 
             expiredProjects.forEach(project => {
@@ -142,10 +154,11 @@
         }
 
         function addProject(name) {
+            const now = Date.now();
             const project = {
                 id: Date.now().toString(),
                 name,
-                remainingDays: 30,
+                deadline: now + 30 * 24 * 60 * 60 * 1000,
                 expired: false,
                 extensions: 0
             };
@@ -157,7 +170,7 @@
         function extendProject(id) {
             const project = projects.find(p => p.id === id);
             if (project) {
-                project.remainingDays += 30;
+                project.deadline += 30 * 24 * 60 * 60 * 1000;
                 project.extensions++;
                 saveProjects();
                 renderProjects();
@@ -185,6 +198,57 @@
             renderContacts();
         }
 
+        function updateCountdown(id) {
+            const project = projects.find(p => p.id === id);
+            if (project && !project.expired) {
+                const countdownElement = document.getElementById(`countdown-${id}`);
+                const interval = setInterval(() => {
+                    const now = Date.now();
+                    const remainingTime = project.deadline - now;
+
+                    if (remainingTime <= 0) {
+                        project.expired = true;
+                        saveProjects();
+                        renderProjects();
+                        clearInterval(interval);
+                    } else {
+                        const days = Math.floor(remainingTime / (1000 * 60 * 60 * 24));
+                        const hours = Math.floor((remainingTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                        const minutes = Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60));
+                        const seconds = Math.floor((remainingTime % (1000 * 60)) / 1000);
+
+                        countdownElement.textContent = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+                    }
+                }, 1000);
+            }
+        }
+
+        function generateReport() {
+            return projects.map(p => {
+                const status = p.expired ? 'Expirado' : `${Math.ceil((p.deadline - Date.now()) / (1000 * 60 * 60 * 24))} dias restantes`;
+                return `${p.name}: ${status}`;
+            }).join('\n');
+        }
+
+        function sendEmailReport() {
+            const report = generateReport();
+            const subject = "Relatório de Projetos";
+            const body = encodeURIComponent(report);
+            contacts.forEach(contact => {
+                const mailtoLink = `mailto:${contact}?subject=${subject}&body=${body}`;
+                window.open(mailtoLink, '_blank');
+            });
+        }
+
+        function sendWhatsAppReport() {
+            const report = generateReport();
+            const whatsappLink = `https://wa.me/5511953608532?text=${encodeURIComponent(report)}`;
+            window.open(whatsappLink, '_blank');
+        }
+
+        sendEmailNowButton.addEventListener('click', sendEmailReport);
+        sendWhatsAppNowButton.addEventListener('click', sendWhatsAppReport);
+
         addProjectForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const projectName = document.getElementById('project-name').value;
@@ -203,23 +267,18 @@
             }
         });
 
-        function updateDays() {
-            const now = new Date().getHours();
-            if (now === 8) {
-                projects.forEach(project => {
-                    if (!project.expired) {
-                        project.remainingDays--;
-                        if (project.remainingDays <= 0) {
-                            project.expired = true;
-                        }
-                    }
-                });
-                saveProjects();
-                renderProjects();
-            }
-        }
+        setInterval(() => {
+            projects.forEach(project => updateCountdown(project.id));
+        }, 1000);
 
-        setInterval(updateDays, 3600000); // Atualiza a cada hora
+        // Envio diário às 08:00
+        setInterval(() => {
+            const now = new Date();
+            if (now.getHours() === 8 && now.getMinutes() === 0) {
+                sendEmailReport();
+                sendWhatsAppReport();
+            }
+        }, 60000);
 
         renderProjects();
         renderContacts();
